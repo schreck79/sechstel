@@ -227,6 +227,10 @@
                     fullText += content.items.map(item => item.str).join(" ") + "\n";
                 }
 
+                if (fullText.trim() === "") {
+                    throw new Error("Das PDF enthält keinen lesbaren Text. Ist es ein Foto oder ein Scan?");
+                }
+
                 document.getElementById('loadingText').innerText = "Schritt 2: KI analysiert die Pausenzeiten...";
 
                 // 2. Text an die KI schicken zum Auswerten
@@ -239,8 +243,8 @@
                 document.getElementById('uploadSection').classList.add('hidden');
                 document.getElementById('controls').classList.remove('hidden');
             } catch (err) {
-                console.error(err);
-                alert("Fehler bei der PDF-Analyse. Möglicherweise ist das PDF gesperrt oder der API-Key ist ungültig.");
+                console.error("Detaillierter Fehler:", err);
+                alert("Fehler bei der Analyse:\n\n" + err.message);
             } finally {
                 // Ladebildschirm wieder verstecken
                 document.getElementById('loadingOverlay').classList.add('hidden');
@@ -286,7 +290,14 @@
             });
 
             if (!response.ok) {
-                throw new Error("KI antwortet nicht richtig. API Key überprüfen.");
+                // Versuche, die genaue Fehlermeldung von Google zu lesen
+                let errorMsg = "Unbekannter API Fehler";
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.error.message;
+                } catch(e) {}
+                
+                throw new Error(`Google API Fehler (${response.status}): ${errorMsg}`);
             }
 
             const result = await response.json();
@@ -332,4 +343,3 @@
     </script>
 </body>
 </html>
-
