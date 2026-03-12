@@ -17,47 +17,62 @@
             print-color-adjust: exact;
         }
         
-        /* Das ist die Magie für das Drucken auf der oberen Hälfte einer A4 Seite */
+        /* Das ist die Magie für das Drucken auf der oberen Hälfte einer A4 Seite im Hochformat */
         @media print {
             @page {
-                size: A4 portrait;
-                margin: 12mm 15mm; /* Standard Ränder für A4 */
+                size: A4 portrait !important; /* Erzwingt Hochformat A4 */
+                margin: 10mm 15mm !important; /* Feste Ränder */
             }
             .no-print { display: none !important; }
-            body { background: white; padding: 0; margin: 0; }
+            
+            html, body { 
+                background: white; 
+                padding: 0; 
+                margin: 0; 
+                width: 210mm !important;  /* Feste A4 Breite */
+                height: 297mm !important; /* Feste A4 Höhe */
+            }
             
             .print-container { 
                 box-shadow: none !important; 
                 border: none !important; 
-                width: 100% !important; 
-                max-width: none !important;
+                width: 180mm !important; /* Breite = A4 minus Ränder */
+                max-width: 180mm !important;
+                height: 135mm !important; /* Höhe = Exakt die obere Hälfte eines A4-Blattes */
+                max-height: 135mm !important;
                 margin: 0 !important; 
-                padding: 0 !important; /* Entfernt das Bildschirm-Padding für maximalen Platz */
+                padding: 0 !important; 
+                overflow: hidden !important; /* Verhindert Ausbrechen des Layouts */
             }
             
             input { 
                 border-bottom: 1px dotted #000 !important; 
                 background: transparent !important; 
-                font-size: 12px !important;
-            }
-            
-            .form-table { width: 100% !important; border-collapse: collapse !important; }
-            .form-table th, .form-table td { 
-                border: 1px solid black !important; 
-                padding: 3px 4px !important; 
                 font-size: 11px !important;
             }
             
-            /* Skalierung der Höhen und Abstände, damit es exakt in die obere Hälfte passt */
-            .h-10 { height: 28px !important; } /* Zeilenhöhe der Tabelle */
-            .mb-8 { margin-bottom: 15px !important; }
-            .mt-10 { margin-top: 15px !important; }
-            .mt-12 { margin-top: 25px !important; }
-            .gap-y-5 { row-gap: 12px !important; }
+            .form-table { 
+                width: 100% !important; 
+                border-collapse: collapse !important; 
+                table-layout: fixed !important; /* Verhindert zu breite Spalten */
+            }
+            .form-table th, .form-table td { 
+                border: 1px solid black !important; 
+                padding: 2px 2px !important; 
+                font-size: 10px !important; /* Etwas kleinere Schrift für kompaktes Layout */
+                word-wrap: break-word;
+            }
             
-            h1 { font-size: 15px !important; line-height: 1.3 !important; margin-bottom: 16px !important; }
-            .text-\[13px\] { font-size: 12px !important; }
-            .text-\[12px\] { font-size: 11px !important; }
+            /* Strikte Skalierung der Höhen und Abstände für die obere A4 Hälfte */
+            .h-10 { height: 24px !important; } /* Tabellenzeilen exakt anpassen */
+            .mb-8 { margin-bottom: 8px !important; }
+            .mt-10 { margin-top: 8px !important; }
+            .mt-12 { margin-top: 15px !important; }
+            .gap-y-5 { row-gap: 8px !important; }
+            
+            h1 { font-size: 13px !important; line-height: 1.2 !important; margin-bottom: 10px !important; }
+            .text-\[13px\] { font-size: 11px !important; }
+            .text-\[12px\] { font-size: 10px !important; }
         }
 
         .dotted-input {
@@ -166,18 +181,18 @@
             <table class="w-full form-table">
                 <thead class="bg-slate-50">
                     <tr>
-                        <th rowspan="2" class="w-24">Linie /<br>Umlauf</th>
-                        <th>Soll</th>
+                        <th rowspan="2" class="w-16">Linie /<br>Umlauf</th>
+                        <th class="w-16">Soll</th>
                         <th colspan="2">geplante unbezahlte Pause</th>
                         <th colspan="2" class="bg-blue-50/30">IST (füllt Fahrer/in aus)</th>
                         <th>Abrechnung Dzt</th>
                     </tr>
                     <tr>
-                        <th class="w-24">Ankunft<br>Endstelle</th>
-                        <th class="w-16">von</th>
-                        <th class="w-16">bis</th>
-                        <th class="w-24">Ankunft<br>Endstelle</th>
-                        <th class="w-16 font-bold">KK<br>Min</th>
+                        <th class="w-20">Ankunft<br>Endstelle</th>
+                        <th class="w-12">von</th>
+                        <th class="w-12">bis</th>
+                        <th class="w-20">Ankunft<br>Endstelle</th>
+                        <th class="w-12 font-bold">KK<br>Min</th>
                         <th>Zuschläge</th>
                     </tr>
                 </thead>
