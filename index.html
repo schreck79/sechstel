@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dienstplan Formular-Generator - Dokumentation & Analyse</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+body { font-family: 'Inter', sans-serif; }
+html { scroll-behavior: smooth; }
+.tab-active { border-bottom: 4px solid #2563eb; color: #1e3a8a; font-weight: 600; }
+.tab-inactive { border-bottom: 4px solid transparent; color: #64748b; }
+.chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 400px; max-height: 50vh; }
+</style>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased selection:bg-blue-200 selection:text-blue-900">
+
+<!-- Chosen Palette: Stone and Slate neutrals with vibrant Blue (trust, technology) and subtle Amber (transit/warning context) accents. -->
+<!-- Application Structure Plan: The SPA is designed as a linear, storytelling dashboard. It begins with a clear hero section to define the tool's purpose. It then uses interactive tabs to explore core features without overwhelming the user with text. A data visualization section (Chart.js) highlights the value proposition (time saved), followed by a CSS-based architecture diagram to explain the technical flow. Finally, an interactive step-by-step guide explains the GitHub deployment. This structure guides the user from understanding "What" to "Why" to "How", maximizing comprehension of the README content. -->
+<!-- Visualization & Content Choices: Features are presented via JS-driven tabs to organize qualitative insights interactively. The value proposition uses a Chart.js Bar Chart to compare manual vs. automated time, clearly communicating quantitative benefits. The architecture is built with HTML/Tailwind flexbox to visualize data flow, strictly avoiding SVGs. The deployment guide uses an interactive accordion/step-list. All methods rely on standard HTML/JS, adhering to the NO SVG/Mermaid rule. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md shadow-sm z-50 border-b border-stone-200">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between h-16">
+<div class="flex items-center gap-2">
+<span class="text-2xl">🚌</span>
+<span class="font-bold text-xl tracking-tight text-blue-900">Dienstplan-Gen Docs</span>
+</div>
+<div class="hidden md:flex items-center space-x-8">
+<a href="#ueberblick" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Überblick</a>
+<a href="#features" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Features</a>
+<a href="#impact" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Impact Analyse</a>
+<a href="#architektur" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Technologie</a>
+<a href="#installation" class="text-blue-600 bg-blue-50 px-4 py-2 rounded-full font-semibold hover:bg-blue-100 transition-colors">Installation</a>
+</div>
+</div>
+</div>
+</nav>
+
+<main class="pt-24 pb-16">
+
+<section id="ueberblick" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100">
+<div class="grid grid-cols-1 lg:grid-cols-2">
+<div class="p-10 lg:p-16 flex flex-col justify-center">
+<div class="inline-block bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-bold tracking-wide mb-6 w-max">BVG / TV-N Berlin</div>
+<h1 class="text-4xl lg:text-5xl font-extrabold text-stone-900 leading-tight mb-6">
+Automatisierte <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Pausenabrechnung</span>
+</h1>
+<p class="text-lg text-stone-600 mb-8 leading-relaxed">
+Dieses Dokumentations-Dashboard bietet einen tiefen Einblick in den <strong>Dienstplan Formular-Generator</strong>. Das Tool ermöglicht es Fahrpersonal im ÖPNV, Dienstpläne im PDF-Format hochzuladen und automatisch einen fertigen Antrag auf Anrechnung von Verspätungen auf die unbezahlte Lenkzeitunterbrechung zu erstellen.
+</p>
+<div class="flex flex-wrap gap-4">
+<a href="#features" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg">Funktionsweise entdecken</a>
+<a
