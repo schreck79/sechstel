@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dienstplan Formular-Generator</title>
-    <!-- Tailwind CSS für modernes Design (wird direkt aus dem Internet geladen) -->
+    <!-- Tailwind CSS für modernes Design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PDF.js für das Auslesen der PDF im Browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -105,38 +105,46 @@
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-10">
 
-    <!-- Lade-Bildschirm (Versteckt, bis eine Datei hochgeladen wird) -->
+    <!-- Lade-Bildschirm -->
     <div id="loadingOverlay" class="hidden fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center">
         <div class="loader mb-4"></div>
         <p class="font-bold text-blue-800" id="loadingText">Dienstplan wird analysiert...</p>
-        <p class="text-sm text-slate-500">Dies kann je nach Größe des PDFs einen Moment dauern.</p>
+        <p class="text-sm text-slate-500 mt-2">Dies kann je nach Größe des PDFs einen Moment dauern.</p>
     </div>
 
-    <!-- Hauptcontainer (Das weiße Blatt) -->
+    <!-- Hauptcontainer -->
     <div class="max-w-[210mm] mx-auto bg-white p-6 md:p-12 shadow-2xl border border-slate-200 print-container relative rounded-sm">
         
-        <!-- Bereich zum Hochladen -->
-        <div id="uploadSection" class="no-print mb-10 p-6 md:p-8 border-2 border-dashed border-blue-400 rounded-2xl bg-blue-50/50 text-center transition-all hover:bg-blue-50">
+        <!-- Bereich zum Hochladen und Key eingeben -->
+        <div id="uploadSection" class="no-print mb-10 text-center transition-all">
             
-            <!-- API KEY EINGABEFELD (SICHERE METHODE) -->
-            <div class="max-w-md mx-auto mb-8 bg-white p-4 rounded-xl border border-slate-300 shadow-sm text-left">
-                <label class="block font-bold text-slate-700 mb-1 text-sm">Dein Google Gemini API-Schlüssel:</label>
-                <input type="password" id="apiKeyInput" class="w-full p-2 border border-slate-300 rounded outline-none focus:border-blue-500 text-sm" placeholder="AIzaSy...">
-                <p class="text-xs text-slate-500 mt-2">Wird nur lokal auf deinem Gerät gespeichert und nicht veröffentlicht. <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 underline">Hier Schlüssel erstellen</a>.</p>
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Dienstplan-Analyse</h2>
+            
+            <!-- SCHRITT 1: API KEY EINGABEFELD (SEHR GROSS UND DEUTLICH) -->
+            <div class="max-w-md mx-auto mb-6 bg-blue-50 p-6 rounded-xl border-2 border-blue-300 shadow-sm text-left">
+                <h3 class="font-bold text-blue-900 text-lg mb-3">🔑 Schritt 1: API-Schlüssel</h3>
+                <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+                    Damit die KI das PDF lesen kann, benötigst du einen Schlüssel. Er wird <strong>nur lokal auf deinem Gerät</strong> gespeichert. 
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 font-bold underline">Hier neuen Schlüssel erstellen</a>.
+                </p>
+                <input type="text" id="apiKeyInput" class="w-full p-3 border-2 border-slate-300 rounded-lg outline-none focus:border-blue-600 text-sm font-mono bg-white" placeholder="AIzaSy...">
+                <div class="mt-3 flex justify-between items-center">
+                    <span id="keyStatus" class="text-xs font-bold text-green-600 hidden">✓ Schlüssel aus Speicher geladen</span>
+                    <button onclick="clearKey()" class="text-xs text-red-600 font-bold hover:underline py-1 px-2 rounded hover:bg-red-50 ml-auto">Schlüssel löschen</button>
+                </div>
             </div>
 
-            <div class="mb-4 inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full">
-                <!-- Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+            <!-- SCHRITT 2: PDF UPLOAD -->
+            <div class="max-w-md mx-auto bg-slate-50 p-6 rounded-xl border-2 border-dashed border-slate-300 shadow-sm">
+                <h3 class="font-bold text-slate-800 text-lg mb-3">📄 Schritt 2: PDF hochladen</h3>
+                <p class="text-sm text-slate-600 mb-6">Wähle jetzt dein Dienstplan-PDF aus. Die KI sucht nach unbezahlten Pausen.</p>
+                
+                <input type="file" id="pdfFile" accept=".pdf" class="hidden">
+                <button onclick="document.getElementById('pdfFile').click()" class="w-full bg-slate-800 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-slate-700 active:scale-95 transition-all cursor-pointer text-lg">
+                    PDF auswählen & Analysieren
+                </button>
             </div>
-            <h2 class="text-xl font-bold text-slate-800 mb-2">Dienstplan-Analyse</h2>
-            <p class="text-slate-600 mb-6">Lade dein Dienstplan-PDF hoch. Nur Wenden mit unbezahlten Pausen werden übernommen.</p>
-            <input type="file" id="pdfFile" accept=".pdf" class="hidden">
-            <button onclick="document.getElementById('pdfFile').click()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all cursor-pointer">
-                PDF auswählen
-            </button>
+
         </div>
 
         <!-- Steuerungs-Leiste (Erscheint nach dem Hochladen) -->
@@ -144,8 +152,8 @@
             <button onclick="window.location.reload()" class="flex items-center gap-2 text-red-600 font-semibold hover:bg-red-50 px-3 py-2 rounded-lg transition-colors">
                 Neu laden
             </button>
-            <button onclick="window.print()" class="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 flex items-center gap-2 transition-all">
-                Drucken / PDF speichern
+            <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2 transition-all">
+                🖨️ Drucken / PDF speichern
             </button>
         </div>
 
@@ -247,8 +255,17 @@
             const savedKey = localStorage.getItem('geminiApiKey');
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
+                document.getElementById('keyStatus').classList.remove('hidden');
             }
         });
+
+        // Funktion zum Schlüssel löschen
+        function clearKey() {
+            localStorage.removeItem('geminiApiKey');
+            document.getElementById('apiKeyInput').value = '';
+            document.getElementById('keyStatus').classList.add('hidden');
+            alert('Schlüssel wurde gelöscht! Bitte gib einen neuen ein.');
+        }
 
         // Was passiert, wenn man eine Datei auswählt?
         document.getElementById('pdfFile').addEventListener('change', async (e) => {
@@ -259,16 +276,17 @@
             const apiKey = document.getElementById('apiKeyInput').value.trim();
             
             if (!apiKey || apiKey === "") {
-                alert("FEHLER: Bitte gib zuerst deinen API-Schlüssel in das Textfeld ein!");
+                alert("FEHLER: Bitte füge zuerst deinen neuen API-Schlüssel in Schritt 1 ein!");
                 e.target.value = ''; // Reset, damit die Datei neu gewählt werden kann
                 return;
             }
 
             // Schlüssel lokal im Browser speichern für den nächsten Besuch
             localStorage.setItem('geminiApiKey', apiKey);
+            document.getElementById('keyStatus').classList.remove('hidden');
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
-            document.getElementById('loadingText').innerText = "Schritt 1: Lese PDF aus...";
+            document.getElementById('loadingText').innerText = "Lese Text aus PDF...";
 
             try {
                 // 1. PDF in Text verwandeln
@@ -286,7 +304,7 @@
                     throw new Error("Das PDF enthält keinen lesbaren Text. Ist es ein Foto oder ein Scan?");
                 }
 
-                document.getElementById('loadingText').innerText = "Schritt 2: KI analysiert die Pausenzeiten...";
+                document.getElementById('loadingText').innerText = "KI analysiert Pausenzeiten...";
 
                 // 2. Text an die KI schicken zum Auswerten
                 const entries = await analyzeWithAI(fullText, apiKey);
@@ -299,7 +317,14 @@
                 document.getElementById('controls').classList.remove('hidden');
             } catch (err) {
                 console.error("Detaillierter Fehler:", err);
-                alert("Fehler bei der Analyse:\n\n" + err.message);
+                
+                // Besondere Fehlermeldung, wenn der Schlüssel abgelaufen/falsch ist
+                if (err.message.includes("API key expired") || err.message.includes("400")) {
+                    alert("FEHLER: Der eingegebene API-Schlüssel ist abgelaufen oder ungültig.\n\nBitte klicke auf 'Schlüssel löschen', erstelle dir einen ganz neuen Schlüssel bei Google und füge ihn ein.");
+                } else {
+                    alert("Fehler bei der Analyse:\n\n" + err.message);
+                }
+                
                 e.target.value = ''; // Reset
             } finally {
                 // Ladebildschirm wieder verstecken
