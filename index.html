@@ -1,58 +1,334 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dienstplan Formular-Generator - Dokumentation & Analyse</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-body { font-family: 'Inter', sans-serif; }
-html { scroll-behavior: smooth; }
-.tab-active { border-bottom: 4px solid #2563eb; color: #1e3a8a; font-weight: 600; }
-.tab-inactive { border-bottom: 4px solid transparent; color: #64748b; }
-.chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 400px; max-height: 50vh; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dienstplan Formular-Generator</title>
+    <!-- Tailwind CSS für modernes Design (wird direkt aus dem Internet geladen) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js für das Auslesen der PDF im Browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-print-color-adjust: exact;
+        }
+        
+        /* Das ist die Magie für das Drucken: Alles was "no-print" heißt, verschwindet auf dem Papier */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; margin: 0; }
+            .print-container { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 100% !important; 
+                max-width: none !important;
+                margin: 0 !important; 
+                padding: 10mm !important;
+            }
+            input { 
+                border-bottom: 1px dotted #000 !important; 
+                background: transparent !important; 
+            }
+            .form-table { width: 100% !important; border-collapse: collapse !important; }
+            .form-table th, .form-table td { border: 1px solid black !important; }
+        }
+
+        .dotted-input {
+            border: none;
+            border-bottom: 2px dotted #cbd5e1;
+            outline: none;
+            background: transparent;
+            width: 100%;
+            padding: 2px 4px;
+        }
+
+        .form-table th, .form-table td {
+            border: 1px solid black;
+            padding: 6px 4px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        /* Lade-Animation */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body class="bg-stone-50 text-stone-800 antialiased selection:bg-blue-200 selection:text-blue-900">
+<body class="bg-slate-50 min-h-screen p-4 md:p-10">
 
-<!-- Chosen Palette: Stone and Slate neutrals with vibrant Blue (trust, technology) and subtle Amber (transit/warning context) accents. -->
-<!-- Application Structure Plan: The SPA is designed as a linear, storytelling dashboard. It begins with a clear hero section to define the tool's purpose. It then uses interactive tabs to explore core features without overwhelming the user with text. A data visualization section (Chart.js) highlights the value proposition (time saved), followed by a CSS-based architecture diagram to explain the technical flow. Finally, an interactive step-by-step guide explains the GitHub deployment. This structure guides the user from understanding "What" to "Why" to "How", maximizing comprehension of the README content. -->
-<!-- Visualization & Content Choices: Features are presented via JS-driven tabs to organize qualitative insights interactively. The value proposition uses a Chart.js Bar Chart to compare manual vs. automated time, clearly communicating quantitative benefits. The architecture is built with HTML/Tailwind flexbox to visualize data flow, strictly avoiding SVGs. The deployment guide uses an interactive accordion/step-list. All methods rely on standard HTML/JS, adhering to the NO SVG/Mermaid rule. -->
-<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- Lade-Bildschirm (Versteckt, bis eine Datei hochgeladen wird) -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center">
+        <div class="loader mb-4"></div>
+        <p class="font-bold text-blue-800" id="loadingText">Dienstplan wird analysiert...</p>
+        <p class="text-sm text-slate-500">Dies kann je nach Größe des PDFs einen Moment dauern.</p>
+    </div>
 
-<nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md shadow-sm z-50 border-b border-stone-200">
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="flex justify-between h-16">
-<div class="flex items-center gap-2">
-<span class="text-2xl">🚌</span>
-<span class="font-bold text-xl tracking-tight text-blue-900">Dienstplan-Gen Docs</span>
-</div>
-<div class="hidden md:flex items-center space-x-8">
-<a href="#ueberblick" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Überblick</a>
-<a href="#features" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Features</a>
-<a href="#impact" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Impact Analyse</a>
-<a href="#architektur" class="text-stone-600 hover:text-blue-600 transition-colors font-medium">Technologie</a>
-<a href="#installation" class="text-blue-600 bg-blue-50 px-4 py-2 rounded-full font-semibold hover:bg-blue-100 transition-colors">Installation</a>
-</div>
-</div>
-</div>
-</nav>
+    <!-- Hauptcontainer (Das weiße Blatt) -->
+    <div class="max-w-[210mm] mx-auto bg-white p-6 md:p-12 shadow-2xl border border-slate-200 print-container relative rounded-sm">
+        
+        <!-- Bereich zum Hochladen -->
+        <div id="uploadSection" class="no-print mb-10 p-8 border-2 border-dashed border-blue-400 rounded-2xl bg-blue-50/50 text-center transition-all hover:bg-blue-50">
+            <div class="mb-4 inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full">
+                <!-- Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Dienstplan-Analyse</h2>
+            <p class="text-slate-600 mb-6">Lade dein Dienstplan-PDF hoch. Nur Wenden mit unbezahlten Pausen werden übernommen.</p>
+            <input type="file" id="pdfFile" accept=".pdf" class="hidden">
+            <button onclick="document.getElementById('pdfFile').click()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all cursor-pointer">
+                PDF auswählen
+            </button>
+        </div>
 
-<main class="pt-24 pb-16">
+        <!-- Steuerungs-Leiste (Erscheint nach dem Hochladen) -->
+        <div id="controls" class="no-print hidden flex flex-wrap gap-4 justify-between items-center mb-8 pb-4 border-b">
+            <button onclick="window.location.reload()" class="flex items-center gap-2 text-red-600 font-semibold hover:bg-red-50 px-3 py-2 rounded-lg transition-colors">
+                Neu laden
+            </button>
+            <button onclick="window.print()" class="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 flex items-center gap-2 transition-all">
+                Drucken / PDF speichern
+            </button>
+        </div>
 
-<section id="ueberblick" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-<div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100">
-<div class="grid grid-cols-1 lg:grid-cols-2">
-<div class="p-10 lg:p-16 flex flex-col justify-center">
-<div class="inline-block bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-bold tracking-wide mb-6 w-max">BVG / TV-N Berlin</div>
-<h1 class="text-4xl lg:text-5xl font-extrabold text-stone-900 leading-tight mb-6">
-Automatisierte <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Pausenabrechnung</span>
-</h1>
-<p class="text-lg text-stone-600 mb-8 leading-relaxed">
-Dieses Dokumentations-Dashboard bietet einen tiefen Einblick in den <strong>Dienstplan Formular-Generator</strong>. Das Tool ermöglicht es Fahrpersonal im ÖPNV, Dienstpläne im PDF-Format hochzuladen und automatisch einen fertigen Antrag auf Anrechnung von Verspätungen auf die unbezahlte Lenkzeitunterbrechung zu erstellen.
-</p>
-<div class="flex flex-wrap gap-4">
-<a href="#features" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg">Funktionsweise entdecken</a>
-<a
+        <!-- ========================================== -->
+        <!-- DAS EIGENTLICHE FORMULAR FÜR DEN AUSDRUCK  -->
+        <!-- ========================================== -->
+        <div class="text-center mb-8 mt-4">
+            <h1 class="text-[13px] md:text-[15px] font-bold uppercase leading-tight tracking-tight underline underline-offset-4">
+                Antrag auf die Anrechnung von Verspätungen auf die unbezahlte Lenkzeitunterbrechung bei 1/6 Pausenregelung entsprechend TV-N Berlin § 9 (2) Punkt 2 Abschnitt 3
+            </h1>
+        </div>
+
+        <!-- Stammdaten-Felder -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-12 mb-8 text-[13px]">
+            <div class="flex items-end">
+                <span class="mr-2 whitespace-nowrap font-bold">Name:</span>
+                <input type="text" class="dotted-input">
+            </div>
+            <div class="flex gap-4">
+                <div class="flex items-end w-1/2">
+                    <span class="mr-2 whitespace-nowrap font-bold">Da.-Nr.:</span>
+                    <input type="text" class="dotted-input">
+                </div>
+                <div class="flex items-end w-1/2">
+                    <span class="mr-2 whitespace-nowrap font-bold">Zeilennummer:</span>
+                    <input type="text" class="dotted-input">
+                </div>
+            </div>
+            <div class="flex items-end">
+                <span class="mr-2 whitespace-nowrap font-bold">Betriebstag:</span>
+                <input type="text" class="dotted-input">
+            </div>
+            <div class="flex items-end">
+                <span class="mr-2 whitespace-nowrap font-bold">Dienstnummer:</span>
+                <input type="text" class="dotted-input">
+            </div>
+        </div>
+
+        <!-- Die Formular-Tabelle -->
+        <div class="overflow-x-auto mb-8">
+            <table class="w-full form-table">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th rowspan="2" class="w-24">Linie /<br>Umlauf</th>
+                        <th>Soll</th>
+                        <th colspan="2">geplante unbezahlte Pause</th>
+                        <th colspan="2" class="bg-blue-50/30">IST (füllt Fahrer/in aus)</th>
+                        <th>Abrechnung Dzt</th>
+                    </tr>
+                    <tr>
+                        <th class="w-24">Ankunft<br>Endstelle</th>
+                        <th class="w-16">von</th>
+                        <th class="w-16">bis</th>
+                        <th class="w-24">Ankunft<br>Endstelle</th>
+                        <th class="w-16 font-bold">KK<br>Min</th>
+                        <th>Zuschläge</th>
+                    </tr>
+                </thead>
+                <tbody id="tableContent">
+                    <!-- Platzhalter-Zeilen (werden später von der KI überschrieben) -->
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                    <tr><td class="h-10"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Rechtliche Hinweise und Unterschriften -->
+        <div class="text-[12px] mt-10">
+            <p class="mb-8 leading-relaxed">
+                Mit meiner Unterschrift bestätige ich, die Rechtmäßigkeit der Angaben. Falsche Angaben führen zu arbeitsrechtlichen Konsequenzen.
+            </p>
+            
+            <div class="flex flex-col md:flex-row justify-between gap-12 mt-12">
+                <div class="w-full md:w-[45%] border-t-2 border-black pt-2">
+                    <span class="font-bold">Unterschrift Fahrer/in</span>
+                </div>
+                <div class="w-full md:w-[30%] border-t-2 border-black pt-2">
+                    <span class="font-bold">Vermerk Dzt:</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PROGRAMMLOGIK (JavaScript)                 -->
+    <!-- ========================================== -->
+    <script>
+        // ---------------------------------------------------------
+        // WICHTIG: HIER MUSST DU DEINEN EIGENEN API SCHLÜSSEL EINTRAGEN!
+        // Sonst weiß die App nicht, wie sie das PDF lesen soll.
+        // ---------------------------------------------------------
+        const apiKey = ""; 
+        // ---------------------------------------------------------
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Was passiert, wenn man eine Datei auswählt?
+        document.getElementById('pdfFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Prüfen ob API Key da ist
+            if (!apiKey || apiKey === "") {
+                alert("FEHLER: Du hast den API-Schlüssel im Code vergessen! Bitte öffne die index.html auf GitHub, suche nach 'const apiKey = \"\"' und füge dort deinen Schlüssel ein.");
+                return;
+            }
+
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('loadingText').innerText = "Schritt 1: Lese PDF aus...";
+
+            try {
+                // 1. PDF in Text verwandeln
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = "";
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    fullText += content.items.map(item => item.str).join(" ") + "\n";
+                }
+
+                document.getElementById('loadingText').innerText = "Schritt 2: KI analysiert die Pausenzeiten...";
+
+                // 2. Text an die KI schicken zum Auswerten
+                const entries = await analyzeWithAI(fullText);
+                
+                // 3. Tabelle mit den Ergebnissen füllen
+                updateTable(entries);
+                
+                // Ansicht umschalten (Upload weg, Drucken her)
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('controls').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert("Fehler bei der PDF-Analyse. Möglicherweise ist das PDF gesperrt oder der API-Key ist ungültig.");
+            } finally {
+                // Ladebildschirm wieder verstecken
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        });
+
+        // Funktion: Kommunikation mit der Google Gemini KI
+        async function analyzeWithAI(text) {
+            const prompt = `Analysiere diesen Dienstplan. Extrahiere NUR die Wenden, in denen eine unbezahlte Pause (KK-Minuten > 0) stattfindet. 
+            Gib das Ergebnis als JSON-Array unter dem Schlüssel 'entries' zurück.
+            Felder: linieKurs, sollAnkunft, pauseVon, pauseBis, kkMinuten.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: "Dienstplan Text:\n" + text }] }],
+                systemInstruction: { parts: [{ text: prompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            entries: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        linieKurs: { type: "STRING" },
+                                        sollAnkunft: { type: "STRING" },
+                                        pauseVon: { type: "STRING" },
+                                        pauseBis: { type: "STRING" },
+                                        kkMinuten: { type: "NUMBER" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error("KI antwortet nicht richtig. API Key überprüfen.");
+            }
+
+            const result = await response.json();
+            return JSON.parse(result.candidates[0].content.parts[0].text).entries;
+        }
+
+        // Funktion: HTML-Tabelle befüllen
+        function updateTable(entries) {
+            const tbody = document.getElementById('tableContent');
+            tbody.innerHTML = ""; // Alte Platzhalter löschen
+            
+            // Gefundene Pausen einfügen
+            entries.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = "h-10";
+                row.innerHTML = `
+                    <td class="font-bold border border-black p-1 text-center">${item.linieKurs || ''}</td>
+                    <td class="border border-black p-1 text-center">${item.sollAnkunft || ''}</td>
+                    <td class="border border-black p-1 text-center">${item.pauseVon || ''}</td>
+                    <td class="border border-black p-1 text-center">${item.pauseBis || ''}</td>
+                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                    <td class="p-0 font-bold bg-blue-50/30 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none font-bold bg-transparent" value="${item.kkMinuten || ''}"></td>
+                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Immer auf mindestens 8 Zeilen auffüllen (damit das Formular gut aussieht)
+            const rowsToFill = Math.max(0, 8 - entries.length);
+            for (let i = 0; i < rowsToFill; i++) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.className = "h-10";
+                emptyRow.innerHTML = `
+                    <td class="border border-black"></td><td class="border border-black"></td>
+                    <td class="border border-black"></td><td class="border border-black"></td>
+                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                `;
+                tbody.appendChild(emptyRow);
+            }
+        }
+    </script>
+</body>
+</html>
