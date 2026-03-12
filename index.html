@@ -251,7 +251,7 @@
             }
         });
 
-        // Funktion: Kommunikation mit der Google Gemini KI
+        // Funktion: Kommunikation mit der Google Gemini KI inkl. Fallback-Logik
         async function analyzeWithAI(text) {
             const prompt = `Analysiere diesen Dienstplan. Extrahiere NUR die Wenden, in denen eine unbezahlte Pause (KK-Minuten > 0) stattfindet. 
             Gib das Ergebnis als JSON-Array unter dem Schlüssel 'entries' zurück.
@@ -283,25 +283,54 @@
                 }
             };
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            // Liste der möglichen Modelle, die wir durchprobieren (Fallback-Logik)
+            const modelsToTry = [
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash-latest",
+                "gemini-pro"
+            ];
 
-            if (!response.ok) {
-                // Versuche, die genaue Fehlermeldung von Google zu lesen
-                let errorMsg = "Unbekannter API Fehler";
+            let lastErrorMessage = "";
+
+            for (const model of modelsToTry) {
+                console.log(`Versuche Modell: ${model}...`);
                 try {
-                    const errorData = await response.json();
-                    errorMsg = errorData.error.message;
-                } catch(e) {}
-                
-                throw new Error(`Google API Fehler (${response.status}): ${errorMsg}`);
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        let jsonText = result.candidates[0].content.parts[0].text;
+                        
+                        // Sicherheits-Filter, falls die KI den Text in ```json Blöcke packt
+                        jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                        
+                        return JSON.parse(jsonText).entries;
+                    } else {
+                        const errorData = await response.json();
+                        lastErrorMessage = errorData.error?.message || response.statusText;
+                        console.warn(`Modell ${model} schlug fehl:`, lastErrorMessage);
+                        
+                        // Wenn der Fehler KEIN "404 Not Found" ist (sondern z.B. API Key ungültig - 400), brechen wir sofort ab!
+                        if (response.status !== 404) {
+                            throw new Error(`API-Fehler (${response.status}): ${lastErrorMessage}`);
+                        }
+                    }
+                } catch (e) {
+                    lastErrorMessage = e.message;
+                    // Andere, kritische Fehler sofort ausgeben (nicht einfach zum nächsten Modell springen)
+                    if (!e.message.includes("404") && !e.message.includes("schlug fehl")) {
+                        throw e;
+                    }
+                }
             }
 
-            const result = await response.json();
-            return JSON.parse(result.candidates[0].content.parts[0].text).entries;
+            // Wenn alle Modelle durchprobiert wurden und keines funktioniert hat:
+            throw new Error(`Es konnte kein gültiges KI-Modell gefunden werden. Letzter Fehler: ${lastErrorMessage}`);
         }
 
         // Funktion: HTML-Tabelle befüllen
@@ -309,24 +338,29 @@
             const tbody = document.getElementById('tableContent');
             tbody.innerHTML = ""; // Alte Platzhalter löschen
             
-            // Gefundene Pausen einfügen
-            entries.forEach(item => {
-                const row = document.createElement('tr');
-                row.className = "h-10";
-                row.innerHTML = `
-                    <td class="font-bold border border-black p-1 text-center">${item.linieKurs || ''}</td>
-                    <td class="border border-black p-1 text-center">${item.sollAnkunft || ''}</td>
-                    <td class="border border-black p-1 text-center">${item.pauseVon || ''}</td>
-                    <td class="border border-black p-1 text-center">${item.pauseBis || ''}</td>
-                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
-                    <td class="p-0 font-bold bg-blue-50/30 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none font-bold bg-transparent" value="${item.kkMinuten || ''}"></td>
-                    <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
-                `;
-                tbody.appendChild(row);
-            });
+            // Wenn keine Pausen gefunden wurden
+            if (!entries || entries.length === 0) {
+                alert("Es wurden in diesem Dienstplan keine unbezahlten Pausen (KK-Minuten) gefunden.");
+            } else {
+                // Gefundene Pausen einfügen
+                entries.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.className = "h-10";
+                    row.innerHTML = `
+                        <td class="font-bold border border-black p-1 text-center">${item.linieKurs || ''}</td>
+                        <td class="border border-black p-1 text-center">${item.sollAnkunft || ''}</td>
+                        <td class="border border-black p-1 text-center">${item.pauseVon || ''}</td>
+                        <td class="border border-black p-1 text-center">${item.pauseBis || ''}</td>
+                        <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                        <td class="p-0 font-bold bg-blue-50/30 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none font-bold bg-transparent" value="${item.kkMinuten || ''}"></td>
+                        <td class="p-0 border border-black"><input type="text" class="w-full h-full text-center border-none outline-none"></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
 
             // Immer auf mindestens 8 Zeilen auffüllen (damit das Formular gut aussieht)
-            const rowsToFill = Math.max(0, 8 - entries.length);
+            const rowsToFill = Math.max(0, 8 - (entries ? entries.length : 0));
             for (let i = 0; i < rowsToFill; i++) {
                 const emptyRow = document.createElement('tr');
                 emptyRow.className = "h-10";
