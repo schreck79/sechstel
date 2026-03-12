@@ -17,11 +17,11 @@
             print-color-adjust: exact;
         }
         
-        /* Das ist die Magie für das Drucken im A5 Querformat */
+        /* Das ist die Magie für das Drucken auf der oberen Hälfte einer A4 Seite */
         @media print {
             @page {
-                size: A5 landscape;
-                margin: 8mm; /* Kleine Ränder für den Drucker */
+                size: A4 portrait;
+                margin: 12mm 15mm; /* Standard Ränder für A4 */
             }
             .no-print { display: none !important; }
             body { background: white; padding: 0; margin: 0; }
@@ -38,26 +38,26 @@
             input { 
                 border-bottom: 1px dotted #000 !important; 
                 background: transparent !important; 
-                font-size: 11px !important;
+                font-size: 12px !important;
             }
             
             .form-table { width: 100% !important; border-collapse: collapse !important; }
             .form-table th, .form-table td { 
                 border: 1px solid black !important; 
-                padding: 2px 4px !important; /* Weniger Zell-Innenabstand für Druck */
-                font-size: 10px !important;  /* Kleinere Schrift für A5 */
+                padding: 3px 4px !important; 
+                font-size: 11px !important;
             }
             
-            /* Skalierung der Höhen und Abstände, damit es auf 148mm A5-Höhe passt */
-            .h-10 { height: 22px !important; } /* Zeilenhöhe der Tabelle reduzieren */
-            .mb-8 { margin-bottom: 10px !important; }
-            .mt-10 { margin-top: 10px !important; }
-            .mt-12 { margin-top: 15px !important; }
-            .gap-y-5 { row-gap: 8px !important; }
+            /* Skalierung der Höhen und Abstände, damit es exakt in die obere Hälfte passt */
+            .h-10 { height: 28px !important; } /* Zeilenhöhe der Tabelle */
+            .mb-8 { margin-bottom: 15px !important; }
+            .mt-10 { margin-top: 15px !important; }
+            .mt-12 { margin-top: 25px !important; }
+            .gap-y-5 { row-gap: 12px !important; }
             
-            h1 { font-size: 13px !important; line-height: 1.2 !important; margin-bottom: 12px !important; }
-            .text-\[13px\] { font-size: 11px !important; }
-            .text-\[12px\] { font-size: 10px !important; }
+            h1 { font-size: 15px !important; line-height: 1.3 !important; margin-bottom: 16px !important; }
+            .text-\[13px\] { font-size: 12px !important; }
+            .text-\[12px\] { font-size: 11px !important; }
         }
 
         .dotted-input {
